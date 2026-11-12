@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mod downloader — CreepCraft Toolkit</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1e1f22;--panel:#2b2d31;--panel2:#313338;--ink:#f2f3f5;--mute:#96989d;--line:#3f4147;--accent:#5865f2;--pink:#ff3d81;--green:#2ecc71;box-sizing:border-box}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f2f3f5;--panel:#ffffff;--panel2:#f8f9fb;--ink:#1e1f22;--mute:#5c5e66;--line:#e3e5e8}}
+:root[data-theme="light"]{--bg:#f2f3f5;--panel:#ffffff;--panel2:#f8f9fb;--ink:#1e1f22;--mute:#5c5e66;--line:#e3e5e8}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;overflow-x:hidden}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 "Nunito",system-ui,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+h1,h2,h3{font-family:"Fredoka","Nunito",sans-serif;margin:0;line-height:1.1;font-weight:600}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.themebtn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:14px;z-index:30;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:16px;cursor:pointer}
+.themebtn:hover{background:var(--panel2)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 22px}
+.band{position:relative;background:#3f8f4a;color:#fff;padding:40px 22px 30px;overflow:hidden}
+.band .wrap{padding:0}
+.blob{position:absolute;border-radius:50%;filter:blur(40px);opacity:.35;background:#fff;pointer-events:none}
+.back{display:inline-block;background:rgba(255,255,255,.18);color:#fff;border-radius:8px;padding:5px 12px;font:600 12px "Fredoka";text-decoration:none;margin-bottom:12px}
+.back:hover{background:rgba(255,255,255,.28)}
+.band h1{font-size:clamp(30px,5.5vw,46px);color:#fff}
+.band p{margin:10px 0 0;font-weight:600;max-width:54ch;color:rgba(255,255,255,.9)}
+.content{padding:26px 0 70px}
+.mini{font-size:13px;color:var(--mute);margin:8px 0 0;font-weight:600}
+input,select,button{font-family:inherit}
+input[type=text],input[type=search],select{font:600 15px "Nunito";border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink);padding:10px 14px;min-width:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.row input,.row select{flex:1;min-width:140px}
+/* Game list + layout */
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:24px;align-items:start}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.sidehead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.sidehead h2{font-size:20px}
+.sidehead span{font-size:12.5px;color:var(--mute);font-weight:700}
+.side input{width:100%;margin-bottom:8px}
+.gscroll{max-height:calc(100vh - 190px);min-height:260px;overflow-y:auto;overscroll-behavior:contain;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;scrollbar-width:thin;scrollbar-color:var(--accent) transparent}
+.gscroll::-webkit-scrollbar{width:10px}
+.gscroll::-webkit-scrollbar-track{background:transparent}
+.gscroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;border:2px solid var(--panel)}
+.gscroll::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.gitem{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:transparent;border:0;border-radius:8px;padding:9px 12px;color:var(--ink);font:700 14.5px "Nunito";cursor:pointer}
+.gitem small{color:var(--mute);font-weight:600;font-size:11.5px;white-space:nowrap}
+.gitem:hover{background:var(--panel2)}
+.gitem.on{background:var(--accent);color:#fff}
+.gitem.on small{color:rgba(255,255,255,.8)}
+.gitem.try{border:1px dashed var(--line);margin-top:4px}
+.gnone{padding:14px 12px;color:var(--mute);font-weight:700;font-size:14px}
+.empty{border:2px dashed var(--line);border-radius:14px;padding:44px 20px;text-align:center;color:var(--mute);font-weight:700}
+.empty b{display:block;font:600 20px "Fredoka";color:var(--ink);margin-bottom:4px}
+/* Mods */
+#gpanel{margin-top:0}
+.ghead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.ghead h2{font-size:24px}
+#modlist{display:grid;gap:10px;margin-top:6px}
+.modcard{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.micon{width:56px;height:56px;border-radius:10px;background:var(--panel2);object-fit:cover}
+.mname{font:600 17px "Fredoka"}
+.mdesc{font-size:14px;font-weight:600;color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mact{display:flex;flex-direction:column;gap:6px;min-width:160px}
+.dlbtn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:600 14px "Fredoka";cursor:pointer}
+.dlbtn:hover{filter:brightness(1.1)}
+.dlbtn:disabled{opacity:.6;cursor:wait}
+.mlink{font-size:12.5px;font-weight:700;color:var(--mute);text-align:center}
+.mnote{font-size:12px;font-weight:700;text-align:center;color:var(--mute)}
+.mnote.bad{color:var(--pink)}
+.morebtn{display:block;margin:18px auto 0;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 20px;font:600 14px "Fredoka";cursor:pointer}
+.morebtn:hover{background:var(--panel2)}
+footer{padding:10px 0 46px;color:var(--mute);font-size:13px;font-weight:600}
+@media(max-width:780px){.layout{grid-template-columns:1fr}.side{position:static}.gscroll{max-height:300px;min-height:0}}
+@media(max-width:620px){.modcard{grid-template-columns:48px 1fr}.micon{width:48px;height:48px}.mact{grid-column:1/-1}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<button class="themebtn" id="themebtn" type="button" aria-label="Toggle light and dark mode">🌓</button>
+
+<div class="band">
+  <span class="blob" style="width:160px;height:160px;top:-40px;right:8%"></span>
+  <span class="blob" style="width:120px;height:120px;bottom:-30px;left:12%"></span>
+  <div class="wrap">
+    <a class="back" href="https://creepcraft.org" target="_blank" rel="noopener">← CreepCraft Toolkit</a>
+    <h1>Mod downloader</h1>
+    <p>Scroll the game list, pick a game, then browse and download its mods. Minecraft plus 100+ games.</p>
+  </div>
+</div>
+
+<main class="wrap content layout">
+  <aside class="side" aria-label="Games">
+    <div class="sidehead"><h2>Games</h2><span id="gcount"></span></div>
+    <input type="search" id="gq" aria-label="Search games" placeholder="Search games…" autocomplete="off" spellcheck="false">
+    <div class="gscroll" id="glist" role="group" aria-label="Game list" tabindex="0"></div>
+    <p class="mini" id="gsrcnote"></p>
+  </aside>
+
+  <div>
+    <div class="empty" id="gempty"><b>Pick a game from the list</b>Scroll the list or search it, then choose a game to see its mods.</div>
+
+    <section id="gpanel" hidden>
+      <div class="ghead"><h2 id="gtitle"></h2><span class="mini" id="gsrc" style="margin:0"></span></div>
+      <div class="row">
+        <input type="search" id="mq" placeholder="Search mods" aria-label="Search mods" autocomplete="off" style="flex:2;min-width:200px">
+        <select id="mver" aria-label="Minecraft version"><option value="">Any version</option></select>
+        <select id="mload" aria-label="Mod loader"><option value="fabric">Fabric</option><option value="forge">Forge</option><option value="neoforge">NeoForge</option><option value="quilt">Quilt</option><option value="">Any loader</option></select>
+        <select id="msort" aria-label="Sort results"></select>
+      </div>
+      <p class="mini" id="mstatus" role="status" aria-live="polite" style="margin:0 0 6px"></p>
+      <p class="mini" id="mnote" style="margin:0 0 14px" hidden></p>
+      <div id="modlist"></div>
+      <button class="morebtn" id="mmore" type="button" hidden>Load more</button>
+    </section>
+
+    <p class="mini" style="margin-top:28px">Minecraft mods come from Modrinth. All other games use Thunderstore. Each mod belongs to its authors, so check its page for the license. Not affiliated with Mojang, Modrinth, Thunderstore or any game studio.</p>
+  </div>
+</main>
+
+<script>
+var $=function(i){return document.getElementById(i)};
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+
+/* theme */
+(function(){
+  var s=null;try{s=localStorage.getItem("cc-theme")}catch(e){}
+  if(s)document.documentElement.setAttribute("data-theme",s);
+  $("themebtn").onclick=function(){
+    var c=document.documentElement.getAttribute("data-theme");
+    var n=c==="dark"?"light":(c==="light"?"dark":(matchMedia("(prefers-color-scheme: dark)").matches?"light":"dark"));
+    document.documentElement.setAttribute("data-theme",n);
+    try{localStorage.setItem("cc-theme",n)}catch(e){}
+  };
+})();
+
+(function(){
+  var DESKTOP=false; /* the Python desktop app sets this to true */
+  var MR="https://api.modrinth.com/v2",TS="https://thunderstore.io",PAGE=20;
+  /* If Thunderstore requests fail with "Failed to fetch", deploy thunderstore-proxy-worker.js and paste its URL here, e.g. "https://creepcraft-mods.yourname.workers.dev" */
+  var TS_PROXY="/ts"; /* same-site address served by _worker.js on Cloudflare Pages */
+  var TSAPI=TS_PROXY||TS;
+
+  /* Built-in list, used until (or if) Thunderstore's live game list loads. "Name|slug" */
+  var FALLBACK=("Lethal Company,Valheim,Risk of Rain 2|riskofrain2,R.E.P.O.|repo,H3VR,ReSkate,PEAK,Titanfall 2: Northstar|northstar,"+
+  "BONELAB,Boneworks,Content Warning,GTFO,ROUNDS,ULTRAKILL,ATLYSS,Dyson Sphere Program,"+
+  "Inscryption,Schedule I,Outward,Bomb Rush Cyberfunk,Hollow Knight: Silksong,WEBFISHING,TaleSpire,Enter the Gungeon,"+
+  "White Knuckle,Totally Accurate Battle Simulator,V Rising|v-rising,Bopl Battle,Distance,How to Fish,Cities: Skylines II,RUMBLE,"+
+  "Balatro,Hades 2|hades-ii,Voices of the Void,Muck,Risk of Rain Returns,Zelda 64: Recompiled,Mycopunk,Shadows of Doubt,"+
+  "Void Crew,Across the Obelisk,Megabonk,Lycans,Resonite,Timberborn,STRAFTAT,Techtonica,"+
+  "Big Walk,YAPYAP,Sons Of The Forest,Mage Arena,20 Minutes Till Dawn,Nine Sols,Lethal League Blaze,Wrestling Empire,"+
+  "Touhou: Lost Branch of Legend,Cult of the Lamb,Super Battle Golf,Gang Beasts,Gamble With Your Friends,Sailwind,Subnautica: Below Zero,Hard Bullet,"+
+  "Trombone Champ,Subnautica,Lost Skies,On-Together: Virtual Co-Working|on-together,Old Market Simulator,Banjo: Recompiled,Erenshor,Mimesis,"+
+  "Monster Train 2,ASKA,Among Us,Supermarket Together,Skul: The Hero Slayer,Space Cat Digger,Crab Game,Burglin' Gnomes|burglin-gnomes,"+
+  "Against the Storm,Ultimate Chicken Horse,BRUTALISTICK VR,Windrose,Astroneer,Receiver 2,3Dash,Stonewards,"+
+  "SULFUR,Bloons TD 6,Stacklands,Peglin,Sunkenland,Chrono Ark,Stick Fight: The Game,Crashout Crew,"+
+  "Easy Delivery Co,TCG Card Shop Simulator,Rogue Tower,Ostranauts,Graveyard Keeper 2,House of Legacy,Ale & Tale Tavern|ale-and-tale-tavern,Gladio Mori,"+
+  "Slip & Skid|slip-skid,9 Kings,Last Train Outta' Wormtown|last-train-outta-wormtown,Broforce,Stolen Realm,Atomicrops,Sun Haven,Magicraft,"+
+  "Wizard of Legend,Gorilla Tag,PATAPON 1+2 REPLAY|patapon-1-2-replay,The Spell Brigade,Shift At Midnight,CloverPit|clover-pit,Jump Space,Core Keeper,"+
+  "Sledding Game,Romestead,Lucky Shot,A Gentlemen's Dispute|a-gentlemens-dispute,2 Ship 2 Harkinian,For The King,Grain Rot,Roadside Research,"+
+  "Bad North,Potion Craft,Super Fantasy Kingdom,Necropolis,Vellum,Palworld,Starsand,BETON BRUTAL,"+
+  "Subterranauts,Wizard with a Gun,AGAINST,Human Fall Flat,In Falsus,Starfox 64: Recompiled,Beetleball,Wobbly Life,"+
+  "Baby Steps,Hard Time III|hard-time-3,Deep Rock Galactic: Survivor,Rogue: Genesia,Getting Over It with Bennett Foddy|getting-over-it,RV There Yet?|rv-there-yet,MineMogul|mine-mogul,The Planet Crafter,"+
+  "Ravenfield,Cursed Words,Crime Simulator,Guilty as Sock!|guilty-as-sock,Zort,Shapez 2,Garfield Kart - Furious Racing,Aloft,"+
+  "Nuclear Option,Darkwater,Brotato,Backpack Hero,Mechanica,Wildfrost,Green Hell VR,Another Crab's Treasure|another-crabs-treasure,"+
+  "Pulsar: Lost Colony,Peaks of Yore,Dredge,Soulstone Survivors,Raft,Moonlighter,Cuphead,Pummel Party,"+
+  "Hytale,Scrap Mechanic,Logic World,Dome Keeper,Disco Elysium,Superhot,VTOL VR,Gloomwood,"+
+  "DUSK,Thronefall,Mewgenics,Bendy and the Ink Machine,Blue Prince,Cobalt Core,ENA: Dream BBQ").split(",");
+
+  function slugify(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")}
+  function mkGame(raw){var p=raw.split("|");return {name:p[0],src:"ts",slug:p[1]||slugify(p[0])}}
+  var MC={name:"Minecraft",src:"mr",slug:"minecraft"};
+  var games=[MC].concat(FALLBACK.map(mkGame));
+  var live=false;
+  var HIDDEN={"nasb":1,"hotds":1,"ancient-dungeon-vr":1};
+
+  var SORTS={
+    mr:[["relevance","Relevance"],["downloads","Most downloaded"],["updated","Recently updated"],["newest","Newest"]],
+    ts:[["downloads","Most downloaded"],["updated","Recently updated"],["newest","Newest"],["rating","Top rated"],["name","A to Z"]]
+  };
+  
+  var gq=$("gq"),glist=$("glist"),gcount=$("gcount"),gsrcnote=$("gsrcnote");
+  var mq=$("mq"),mver=$("mver"),mload=$("mload"),msort=$("msort"),mlist=$("modlist"),mstat=$("mstatus"),mnote=$("mnote"),mmore=$("mmore");
+  var cur=null,offset=0,total=0,token=0,timer,tsCache={},verLoaded=false;
+
+  function status(m,bad){mstat.textContent=m;mstat.style.color=bad?"var(--pink)":""}
+  function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"k":String(n)}
+  function fsize(b){return b>1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB"}
+  function desk(n){return DESKTOP&&window.pywebview&&window.pywebview.api&&window.pywebview.api[n]}
+  function getJSON(u){
+    if(desk("fetch_json"))return window.pywebview.api.fetch_json(u).then(function(r){
+      if(r.error){var e=new Error(r.error);e.status=r.status;throw e}return r.data});
+    return fetch(u).then(function(r){if(!r.ok){var e=new Error("HTTP "+r.status);e.status=r.status;throw e}return r.text().then(function(t){try{return JSON.parse(t)}catch(x){var e2=new Error("reply was not JSON (got a web page?)");e2.status=0;throw e2}})})}
+
+  /* Thunderstore request: try the same-site proxy first, then Thunderstore directly. Errors say which step failed. */
+  function tsGet(path){
+    var bases=[];
+    if(TS_PROXY&&!(typeof DESKTOP!=="undefined"&&DESKTOP))bases.push(TS_PROXY);
+    bases.push(TS);
+    var notes=[],i=0;
+    return (function next(){
+      var base=bases[i];
+      return getJSON(base+path).catch(function(e){
+        notes.push((base===TS?"direct":"proxy")+": "+e.message);
+        if(++i<bases.length)return next();
+        var err=new Error(notes.join(" | "));
+        err.status=(base===TS&&e.status===404)?404:(e.status||0);
+        throw err;
+      });
+    })();
+  }
+  function findBySlug(s){return games.filter(function(g){return g.slug===s})[0]}
+
+  /* ---------- game list (always visible, scrollable) ---------- */
+  function updateCount(){
+    gcount.textContent=games.length+" games";
+    gsrcnote.textContent=live?"Full game list loaded from Thunderstore, plus Minecraft."
+      :"Built-in list. Loading the full Thunderstore list\u2026 Not here? Type the name and choose \u201cTry it\u201d.";
+  }
+  function filterGames(q){
+    q=q.trim().toLowerCase();
+    if(!q)return games.slice();
+    var starts=[],has=[],sq=slugify(q);
+    games.forEach(function(g){var n=g.name.toLowerCase();if(n.indexOf(q)===0)starts.push(g);else if(n.indexOf(q)>-1||(sq&&g.slug.indexOf(sq)>-1))has.push(g)});
+    return starts.concat(has);
+  }
+  function gbtn(g,label,tryIt){
+    var b=el("button","gitem"+(tryIt?" try":"")+(cur&&!tryIt&&cur.slug===g.slug?" on":""));b.type="button";
+    b.dataset.slug=g.slug;
+    b.appendChild(el("span",null,label));
+    b.appendChild(el("small",null,g.src==="mr"?"Modrinth":"Thunderstore"));
+    b.onclick=function(){choose(g)};
+    return b;
+  }
+  function renderList(){
+    var q=gq.value,t=q.trim(),list=filterGames(q);
+    glist.innerHTML="";
+    list.forEach(function(g){glist.appendChild(gbtn(g,g.name,false))});
+    if(t&&!list.some(function(g){return g.name.toLowerCase()===t.toLowerCase()})){
+      glist.appendChild(gbtn({name:t,src:"ts",slug:slugify(t)||"x",custom:true},"Try \u201c"+t+"\u201d on Thunderstore",true));
+    }
+    if(!glist.children.length)glist.appendChild(el("div","gnone","Type a game name to search."));
+    updateCount();
+  }
+  function markActive(){
+    glist.querySelectorAll(".gitem").forEach(function(b){
+      var on=cur&&!b.classList.contains("try")&&b.dataset.slug===cur.slug;
+      b.classList.toggle("on",!!on);
+      if(on)b.scrollIntoView({block:"nearest"});
+    });
+  }
+  gq.addEventListener("input",renderList);
+
+  /* live Thunderstore game list */
+  function loadCommunities(){
+    var all=[],pages=0;
+    (function next(url){
+      tsGet(url).then(function(d){
+        (d.results||[]).forEach(function(c){if(c.identifier&&c.name)all.push({name:c.name,src:"ts",slug:c.identifier})});
+        var nl=d.pagination&&d.pagination.next_link;if(nl)nl=nl.replace(TS,"");
+        if(nl&&++pages<40)next(nl);else finish();
+      }).catch(function(){if(all.length)finish();else{gcount.textContent=games.length+" games in the built-in list (couldn't reach Thunderstore's full list). Can't find yours? Type its name and pick \u201cTry it\u201d."}});
+    })("/api/experimental/community/");
+    function finish(){
+      var seen={};all=all.filter(function(g){if(HIDDEN[g.slug]||seen[g.slug])return false;seen[g.slug]=1;return true});
+      all.sort(function(a,b){return a.name.toLowerCase()<b.name.toLowerCase()?-1:1});
+      games=[MC].concat(all);live=true;renderList();
+      if(cur&&cur.src==="ts"&&!cur.custom){var m=findBySlug(cur.slug);if(m)cur=m}
+    }
+  }
+
+  /* ---------- choose a game ---------- */
+  function choose(g){
+    cur=g;
+    $("gempty").hidden=true;$("gpanel").hidden=false;
+    $("gtitle").textContent=g.name;
+    $("gsrc").textContent=g.src==="mr"?"via Modrinth":"via Thunderstore";
+    var mc=g.src==="mr";
+    mver.hidden=!mc;mload.hidden=!mc;
+    msort.innerHTML="";
+    SORTS[g.src].forEach(function(s){var o=document.createElement("option");o.value=s[0];o.textContent=s[1];msort.appendChild(o)});
+    if(mc){mnote.hidden=true;if(!verLoaded){verLoaded=true;loadVersions()}}
+    else{
+      mnote.hidden=false;mnote.innerHTML="";
+      mnote.appendChild(document.createTextNode("Most of these mods use BepInEx. Easiest install: the free r2modman manager, which adds dependencies for you. Plain downloads only include the one mod. "));
+      var a=el("a",null,"Browse "+g.name+" on Thunderstore");a.href=TS+"/c/"+encodeURIComponent(g.slug)+"/";a.target="_blank";a.rel="noopener";a.style.color="var(--accent)";mnote.appendChild(a);
+    }
+    mq.value="";markActive();
+    try{history.replaceState(null,"","#"+g.slug)}catch(e){}
+    search(true);
+    if(matchMedia("(max-width:780px)").matches)$("gpanel").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  /* ---------- Minecraft versions ---------- */
+  function loadVersions(){
+    getJSON(MR+"/tag/game_version").then(function(all){
+      all.filter(function(v){return v.version_type==="release"}).forEach(function(v){
+        var o=document.createElement("option");o.value=v.version;o.textContent=v.version;mver.appendChild(o);
+      });
+    }).catch(function(){});
+  }
+
+  /* ---------- result card ---------- */
+  function render(it){
+    var card=el("div","modcard");
+    var img=el("img","micon");img.alt="";img.loading="lazy";if(it.icon)img.src=it.icon;
+    var info=el("div");
+    info.appendChild(el("div","mname",it.title));
+    info.appendChild(el("div","mini","by "+it.author+" \u00b7 "+fmt(it.downloads)+" downloads"));
+    info.appendChild(el("div","mdesc",it.desc));
+    var act=el("div","mact");
+    var btn=el("button","dlbtn","Download");btn.type="button";
+    var link=el("a","mlink","View on "+it.site);link.href=it.page;link.target="_blank";link.rel="noopener";
+    var note=el("div","mnote");note.hidden=true;
+    act.appendChild(btn);
+    if(it.manager){var m=el("a","mlink","Open in r2modman");m.href=it.manager;act.appendChild(m)}
+    act.appendChild(link);act.appendChild(note);
+    card.appendChild(img);card.appendChild(info);card.appendChild(act);
+    btn.addEventListener("click",function(){
+      btn.disabled=true;btn.textContent="Finding file\u2026";note.hidden=true;note.className="mnote";
+      Promise.resolve().then(it.dl).then(function(f){
+        var finish=function(){btn.textContent="Download again";note.hidden=false;
+          note.textContent=f.filename+(f.size?" \u00b7 "+fsize(f.size):"")+" \u00b7 "+f.version};
+        if(desk("download")){
+          return window.pywebview.api.download(f.url,f.filename).then(function(r){
+            if(r&&r.error)throw new Error(r.error);
+            if(r&&r.cancelled){btn.textContent="Download";return}
+            finish();note.textContent="Saved: "+r.path;
+          });
+        }
+        var a=document.createElement("a");a.href=f.url;a.download=f.filename;document.body.appendChild(a);a.click();a.remove();
+        finish();
+      }).catch(function(e){
+        btn.textContent="Download";note.hidden=false;note.className="mnote bad";
+        note.textContent=e.message==="none"?"No file for this version and loader. Change the filters above.":"Couldn't fetch the file. Try again.";
+      }).then(function(){btn.disabled=false});
+    });
+    mlist.appendChild(card);
+  }
+
+  /* ---------- Modrinth ---------- */
+  function mrItem(m){
+    return {title:m.title,author:m.author,downloads:m.downloads,desc:m.description,icon:m.icon_url,site:"Modrinth",
+      page:"https://modrinth.com/mod/"+encodeURIComponent(m.slug),
+      dl:function(){
+        var p=[];
+        if(mver.value)p.push("game_versions="+encodeURIComponent(JSON.stringify([mver.value])));
+        if(mload.value)p.push("loaders="+encodeURIComponent(JSON.stringify([mload.value])));
+        return getJSON(MR+"/project/"+m.project_id+"/version?"+p.join("&")).then(function(vs){
+          if(!vs.length)throw new Error("none");
+          var v=vs[0],f=v.files.filter(function(x){return x.primary})[0]||v.files[0];
+          return {url:f.url,filename:f.filename,size:f.size,version:v.version_number};
+        });
+      }};
+  }
+  function searchMR(my){
+    var facets=[["project_type:mod"]];
+    if(mver.value)facets.push(["versions:"+mver.value]);
+    if(mload.value)facets.push(["categories:"+mload.value]);
+    var u=MR+"/search?limit="+PAGE+"&offset="+offset+"&index="+msort.value+"&facets="+encodeURIComponent(JSON.stringify(facets))+(mq.value.trim()?"&query="+encodeURIComponent(mq.value.trim()):"");
+    return getJSON(u).then(function(res){
+      if(my!==token)return;
+      total=res.total_hits;res.hits.forEach(function(h){render(mrItem(h))});offset+=res.hits.length;
+    });
+  }
+
+  /* ---------- Thunderstore ---------- */
+  function candidates(g){
+    var c=[g.slug],n=g.name.toLowerCase();
+    var flat=n.replace(/[^a-z0-9]/g,"");
+    var acro=n.replace(/[^a-z0-9 -]/g,"").split(/[\s-]+/).filter(Boolean).map(function(w){return w[0]}).join("");
+    [flat,acro].forEach(function(x){if(x&&x.length>2&&c.indexOf(x)<0)c.push(x)});
+    return c;
+  }
+  function tsLoad(slug){
+    if(tsCache[slug])return Promise.resolve(tsCache[slug]);
+    return tsGet("/c/"+encodeURIComponent(slug)+"/api/v1/package/").then(function(arr){
+      var list=arr.filter(function(p){return !p.is_deprecated&&!p.has_nsfw_content&&p.versions&&p.versions.length}).map(function(p){
+        var d=0;p.versions.forEach(function(x){d+=x.downloads||0});
+        return {raw:p,downloads:d,title:p.name.replace(/_/g," "),search:(p.name+" "+p.owner+" "+(p.versions[0].description||"")).toLowerCase()};
+      });
+      tsCache[slug]=list;return list;
+    });
+  }
+  /* Built-in games use their exact slug. Typed-in games try a few likely slugs. */
+  function tsLoadGame(g){
+    var tries=g.custom?candidates(g):[g.slug],i=0;
+    return (function next(){
+      return tsLoad(tries[i]).then(function(list){g.slug=tries[i];return list}).catch(function(e){
+        if(e.status===404&&++i<tries.length)return next();
+        throw e;
+      });
+    })();
+  }
+  function tsItem(x){
+    var p=x.raw,v=p.versions[0];
+    return {title:x.title,author:p.owner,downloads:x.downloads,desc:v.description||"",icon:v.icon,site:"Thunderstore",
+      page:p.package_url,
+      manager:"ror2mm://v1/install/thunderstore.io/"+p.owner+"/"+p.name+"/"+v.version_number+"/",
+      dl:function(){return {url:v.download_url,filename:p.owner+"-"+p.name+"-"+v.version_number+".zip",size:v.file_size,version:v.version_number}}};
+  }
+  function searchTS(my){
+    return tsLoadGame(cur).then(function(all){
+      if(my!==token)return;
+      var q=mq.value.trim().toLowerCase(),s=msort.value;
+      var list=all.filter(function(x){return !q||x.search.indexOf(q)>-1});
+      list.sort(function(a,b){
+        if(s==="updated")return b.raw.date_updated>a.raw.date_updated?1:-1;
+        if(s==="newest")return b.raw.date_created>a.raw.date_created?1:-1;
+        if(s==="rating")return (b.raw.rating_score||0)-(a.raw.rating_score||0);
+        if(s==="name")return a.title.toLowerCase()<b.title.toLowerCase()?-1:1;
+        return b.downloads-a.downloads;
+      });
+      total=list.length;
+      var slice=list.slice(offset,offset+PAGE);
+      slice.forEach(function(x){render(tsItem(x))});offset+=slice.length;
+    });
+  }
+
+  /* ---------- shared search ---------- */
+  function search(reset){
+    if(!cur)return;
+    if(reset){offset=0;mlist.innerHTML=""}
+    var my=++token;
+    status(cur.src==="ts"&&!tsCache[cur.slug]?"Loading "+cur.name+" mods\u2026":"Searching\u2026");mmore.hidden=true;
+    (cur.src==="mr"?searchMR(my):searchTS(my)).then(function(){
+      if(my!==token)return;
+      status(total?"Showing "+offset+" of "+total.toLocaleString()+" mods":"No mods match. Try a different search"+(cur.src==="mr"?", version or loader.":"."));
+      mmore.hidden=offset>=total;
+    }).catch(function(e){
+      if(my!==token)return;
+      if(cur.src==="ts"&&e.status===404)status("Thunderstore has no mod community for \u201c"+cur.name+"\u201d. Check the spelling, or search for another game.",true);
+      else status("Couldn't load mods ("+e.message+"). "+(cur.src==="ts"?"Thunderstore may be blocking direct requests from the browser. Use the Browse link above, or set up the proxy.":"Check your connection and try again."),true);
+    });
+  }
+  mq.addEventListener("input",function(){clearTimeout(timer);timer=setTimeout(function(){search(true)},350)});
+  [mver,mload,msort].forEach(function(s){s.addEventListener("change",function(){search(true)})});
+  mmore.addEventListener("click",function(){search(false)});
+
+  /* ---------- init ---------- */
+  function boot(){renderList();loadCommunities()}
+  if(DESKTOP&&!desk("fetch_json"))window.addEventListener("pywebviewready",boot);else boot();
+  if(DESKTOP)document.addEventListener("click",function(e){
+    var a=e.target.closest&&e.target.closest("a[href]");if(!a)return;
+    if(/^(https?:|ror2mm:)/i.test(a.getAttribute("href"))&&desk("open_url")){e.preventDefault();window.pywebview.api.open_url(a.href)}
+  });
+  var h=(location.hash||"").replace("#","");
+  if(h){var g0=findBySlug(h)||(h!=="minecraft"?{name:h,src:"ts",slug:h,custom:true}:MC);choose(g0)}
+})();
+</script>
+</body>
+</html>
